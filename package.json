@@ -16,7 +16,9 @@
   "scripts": {
     "start": "electron .",
     "postinstall": "electron-rebuild -f -w node-pty",
-    "build:linux": "electron-builder --linux deb"
+    "build:linux": "electron-builder --linux deb",
+    "build:win": "electron-builder --win nsis",
+    "build:mac": "electron-builder --mac dmg"
   },
   "dependencies": {
     "node-pty": "^1.0.0",
@@ -35,6 +37,9 @@
     "productName": "Terminal DS",
     "executableName": "terminal-ds",
     "asar": true,
+    "asarUnpack": [
+      "node_modules/node-pty/**"
+    ],
     "files": [
       "**/*",
       "!node_modules/electron-builder/**"
@@ -46,6 +51,19 @@
     },
     "deb": {
       "compression": "gz"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "shortcutName": "Terminal DS",
+      "menuCategory": "Terminal DS",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.developer-tools"
     }
   }
 }

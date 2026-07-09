@@ -15,7 +15,6 @@
   },
   "scripts": {
     "start": "electron .",
-    "postinstall": "electron-rebuild -f -w node-pty",
     "build:linux": "electron-builder --linux deb",
     "build:win": "electron-builder --win nsis",
     "build:mac": "electron-builder --mac dmg"
@@ -29,7 +28,6 @@
   },
   "devDependencies": {
     "electron": "^28.0.0",
-    "@electron/rebuild": "^3.6.0",
     "electron-builder": "^24.13.3"
   },
   "build": {
@@ -37,6 +35,7 @@
     "productName": "Terminal DS",
     "executableName": "terminal-ds",
     "asar": true,
+    "npmRebuild": false,
     "asarUnpack": [
       "node_modules/node-pty/**"
     ],

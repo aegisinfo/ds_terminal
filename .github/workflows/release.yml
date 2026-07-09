@@ -70,21 +70,19 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-      # postinstall's electron-rebuild shells out to node-gyp, whose Visual
-      # Studio auto-detection (find-visualstudio.js) runs vswhere.exe and
-      # buffers its full stdout — on windows-latest's VS2022 install this
-      # output exceeds Node's default 200KB maxBuffer and node-gyp fails with
-      # ERR_CHILD_PROCESS_STDIO_MAXBUFFER before ever reaching a real build
-      # step. GYP_MSVS_VERSION tells node-gyp which VS version to use
-      # directly, skipping the vswhere scan (and the bug) entirely.
+      # node-pty ships genuine N-API (ABI-stable) prebuilds for win32-x64/arm64
+      # bundled directly in the npm package — no native rebuild needed here.
+      # (There used to be a postinstall forcing `electron-rebuild -f -w
+      # node-pty` anyway, which ignored that prebuild and always tried to
+      # recompile via node-gyp; that hit a real node-gyp bug where its Visual
+      # Studio auto-detection overflows Node's default stdout maxBuffer on
+      # windows-latest's VS2022 install (ERR_CHILD_PROCESS_STDIO_MAXBUFFER).
+      # Removed the postinstall entirely instead of working around the bug.)
       - name: Install deps
-        env:
-          GYP_MSVS_VERSION: '2022'
         run: npm ci
       - name: Build installer
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GYP_MSVS_VERSION: '2022'
         run: npm run build:win
       - uses: actions/upload-artifact@v5
         with:

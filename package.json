@@ -1,7 +1,7 @@
 {
   "name": "terminal-ds",
   "productName": "Terminal DS",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Cross-platform split-pane GUI terminal emulator, built on xterm.js and Electron",
   "main": "main.js",
   "license": "MIT",

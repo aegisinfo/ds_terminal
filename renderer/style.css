@@ -1,0 +1,169 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: #11111b;
+  font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', 'Menlo', monospace;
+}
+
+/* ─── Status Bar ─────────────────────────────────────── */
+
+#status-bar {
+  height: 24px;
+  background: #181825;
+  color: #a6adc8;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  gap: 10px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+#status-shell {
+  color: #89b4fa;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+#status-info {
+  color: #585b70;
+  font-size: 11px;
+}
+
+/* ─── Pane Container ────────────────────────────────── */
+
+#pane-container {
+  display: flex;
+  height: calc(100% - 24px);
+  width: 100%;
+  position: relative;
+}
+
+#pane-container.split-vertical {
+  flex-direction: row;
+}
+
+#pane-container.split-horizontal {
+  flex-direction: column;
+}
+
+/* ─── Individual Panes ──────────────────────────────── */
+
+.pane {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #1e1e2e;
+  min-width: 150px;
+  min-height: 100px;
+}
+
+.pane-header {
+  height: 26px;
+  background: #181825;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  flex-shrink: 0;
+  user-select: none;
+  border-bottom: 1px solid #313244;
+}
+
+.pane-label {
+  font-size: 11px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pane[data-pane="0"] .pane-label {
+  color: #89b4fa; /* blue for AEGIS */
+}
+
+.pane[data-pane="1"] .pane-label {
+  color: #a6e3a1; /* green for shell */
+}
+
+.pane-terminal {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Active pane indicator */
+.pane.active {
+  box-shadow: inset 0 0 0 1px #89b4fa;
+}
+
+/* ─── Divider / Gutter ──────────────────────────────── */
+
+.pane-divider {
+  flex-shrink: 0;
+  background: #313244;
+  position: relative;
+  z-index: 10;
+  transition: background 0.1s;
+}
+
+.pane-divider:hover {
+  background: #89b4fa;
+}
+
+.pane-divider.dragging {
+  background: #89b4fa;
+}
+
+#pane-container.split-vertical > .pane-divider {
+  width: 4px;
+  cursor: col-resize;
+}
+
+#pane-container.split-horizontal > .pane-divider {
+  height: 4px;
+  cursor: row-resize;
+}
+
+/* ─── xterm overrides ───────────────────────────────── */
+
+.xterm {
+  height: 100% !important;
+  padding: 4px 8px;
+}
+
+.xterm-viewport {
+  scrollbar-width: thin;
+  scrollbar-color: #45475a transparent;
+}
+
+.xterm-viewport::-webkit-scrollbar {
+  width: 8px;
+}
+
+.xterm-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb {
+  background: #45475a;
+  border-radius: 4px;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: #585b70;
+}
+
+/* ─── Focus ring for terminal container ─────────────── */
+
+.pane-terminal:focus-within .xterm {
+  outline: none;
+}

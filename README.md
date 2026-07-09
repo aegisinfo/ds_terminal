@@ -16,8 +16,8 @@ A cross-platform, split-pane GUI terminal emulator built on [xterm.js](https://x
 Download the latest `.deb` from the [Releases page](https://github.com/aegisinfo/ds_terminal/releases), then install it with `apt` (this resolves and installs any missing dependencies automatically):
 
 ```bash
-curl -LO https://github.com/aegisinfo/ds_terminal/releases/latest/download/terminal-ds_1.0.0_amd64.deb
-sudo apt install ./terminal-ds_1.0.0_amd64.deb
+curl -LO https://github.com/aegisinfo/ds_terminal/releases/latest/download/terminal-ds_1.0.1_amd64.deb
+sudo apt install ./terminal-ds_1.0.1_amd64.deb
 ```
 
 Launch it from your applications menu, or from a terminal:

@@ -1,11 +1,22 @@
 {
   "name": "terminal-ds",
+  "productName": "Terminal DS",
   "version": "1.0.0",
-  "description": "Cross-platform GUI terminal emulator",
+  "description": "Cross-platform split-pane GUI terminal emulator, built on xterm.js and Electron",
   "main": "main.js",
+  "license": "MIT",
+  "author": {
+    "name": "Niklas Borneklint",
+    "email": "nborneklint@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aegisinfo/ds_terminal.git"
+  },
   "scripts": {
     "start": "electron .",
-    "postinstall": "electron-rebuild -f -w node-pty"
+    "postinstall": "electron-rebuild -f -w node-pty",
+    "build:linux": "electron-builder --linux deb"
   },
   "dependencies": {
     "node-pty": "^1.0.0",
@@ -16,6 +27,25 @@
   },
   "devDependencies": {
     "electron": "^28.0.0",
-    "@electron/rebuild": "^3.6.0"
+    "@electron/rebuild": "^3.6.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "org.aegiscloud.terminalds",
+    "productName": "Terminal DS",
+    "executableName": "terminal-ds",
+    "asar": true,
+    "files": [
+      "**/*",
+      "!node_modules/electron-builder/**"
+    ],
+    "linux": {
+      "target": ["deb"],
+      "category": "System",
+      "synopsis": "Cross-platform split-pane GUI terminal emulator"
+    },
+    "deb": {
+      "compression": "gz"
+    }
   }
 }

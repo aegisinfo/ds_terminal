@@ -1,6 +1,8 @@
 const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const path = require('path');
 const os = require('os');
+const fs = require('fs');
+const { execFileSync } = require('child_process');
 const pty = require('node-pty');
 
 let mainWindow;
@@ -9,6 +11,40 @@ const ptyProcesses = new Map(); // paneId -> { pty, shell }
 function getDefaultShell() {
   if (process.platform === 'win32') return 'powershell.exe';
   return process.env.SHELL || (process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash');
+}
+
+// Locate an installed aegis-cli entry point. It's always a self-contained
+// executable/wrapper script (e.g. ~/.local/bin/aegis-cli execs a bundled
+// node + main.js, or ~/.local/share/aegiscode-node/bin/aegis from a plain
+// npm -g install) — never needs a separately-resolved Node binary here.
+function findAegisCli() {
+  const exe = process.platform === 'win32' ? '.exe' : '';
+  const cmd = process.platform === 'win32' ? '.cmd' : '';
+  const home = os.homedir();
+  const candidates = [
+    path.join(home, '.local', 'bin', `aegis-cli${exe}`),
+    path.join(home, '.local', 'bin', `aegis${exe}`),
+    path.join(home, '.local', 'bin', `aegiscode${exe}`),
+    path.join(home, '.local', 'share', 'aegiscode-node', 'bin', `aegis${exe}`),
+    path.join(home, '.local', 'share', 'aegiscode-node', 'bin', `aegiscode${exe}`),
+    process.env.APPDATA && path.join(process.env.APPDATA, 'npm', `aegis-cli${cmd}`),
+    process.env.APPDATA && path.join(process.env.APPDATA, 'npm', `aegis${cmd}`),
+    '/usr/local/bin/aegis-cli',
+    '/usr/local/bin/aegis',
+    '/usr/bin/aegis-cli',
+    '/usr/bin/aegis',
+  ].filter(Boolean);
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  for (const name of ['aegis-cli', 'aegis']) {
+    try {
+      const found = execFileSync(process.platform === 'win32' ? 'where' : 'which', [name], { encoding: 'utf8' })
+        .trim().split(/\r?\n/)[0];
+      if (found) return found;
+    } catch {}
+  }
+  return null;
 }
 
 function createWindow() {
@@ -119,7 +155,21 @@ ipcMain.handle('pty:spawn', (_event, paneId, cols, rows, shell) => {
     ptyProcesses.delete(paneId);
   }
 
-  const shellPath = shell || getDefaultShell();
+  // 'aegis' is a sentinel, not a literal shell path — the AEGIS pane asks
+  // for aegis-cli specifically rather than an explicit shell override.
+  let shellPath;
+  let aegisFound = true;
+  if (shell === 'aegis') {
+    const aegisBin = findAegisCli();
+    if (aegisBin) {
+      shellPath = aegisBin;
+    } else {
+      aegisFound = false;
+      shellPath = getDefaultShell();
+    }
+  } else {
+    shellPath = shell || getDefaultShell();
+  }
   const shellName = path.basename(shellPath);
 
   const proc = pty.spawn(shellPath, [], {
@@ -144,7 +194,7 @@ ipcMain.handle('pty:spawn', (_event, paneId, cols, rows, shell) => {
   });
 
   ptyProcesses.set(paneId, { pty: proc, shell: shellName });
-  return { shell: shellName };
+  return { shell: shellName, aegisFound };
 });
 
 ipcMain.handle('pty:resize', (_event, paneId, cols, rows) => {

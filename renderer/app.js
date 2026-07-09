@@ -133,8 +133,15 @@
     const cols = term.cols || 80;
     const rows = term.rows || 24;
 
+    // Pane 0 is permanently the "AEGIS" pane (labels are only assigned once,
+    // at startup, and nextPaneId starts at 2 for anything created later via
+    // split) — ask main.js for aegis-cli specifically instead of a shell.
     try {
-      await window.terminal.spawn(paneId, cols, rows);
+      const result = await window.terminal.spawn(paneId, cols, rows, paneId === 0 ? 'aegis' : undefined);
+      if (paneId === 0 && result && result.aegisFound === false) {
+        term.writeln('\x1b[33m[AEGIS] aegis-cli not found on this system — falling back to your default shell.\x1b[0m');
+        term.writeln('\x1b[33m        Install it from https://github.com/aegisinfo/aegiscode\x1b[0m\r\n');
+      }
     } catch (err) {
       term.writeln(`\r\n\x1b[31mFailed to spawn shell: ${err.message}\x1b[0m`);
       return;

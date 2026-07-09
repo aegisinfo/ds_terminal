@@ -39,6 +39,10 @@
   let activePaneId = 0;
   let fontSizes = {};           // paneId -> fontSize
   let dividerEl = null;
+  // What pane 0 should run — 'aegis' (default) or 'claude', picked at launch
+  // time via `--session=` (see main.js), e.g. by aegiscode's GUI spawning
+  // this app for its "Claude" button instead of "Terminal".
+  let initialSession = 'aegis';
 
   // ─── PTY Data Router ─────────────────────────────────
   const ptyDataHandlers = {};
@@ -133,14 +137,19 @@
     const cols = term.cols || 80;
     const rows = term.rows || 24;
 
-    // Pane 0 is permanently the "AEGIS" pane (labels are only assigned once,
-    // at startup, and nextPaneId starts at 2 for anything created later via
-    // split) — ask main.js for aegis-cli specifically instead of a shell.
+    // Pane 0 is permanently the "AEGIS"/"Claude" pane (labels are only
+    // assigned once, at startup, and nextPaneId starts at 2 for anything
+    // created later via split) — ask main.js for aegis-cli or Claude Code
+    // specifically instead of a shell.
     try {
-      const result = await window.terminal.spawn(paneId, cols, rows, paneId === 0 ? 'aegis' : undefined);
+      const result = await window.terminal.spawn(paneId, cols, rows, paneId === 0 ? initialSession : undefined);
       if (paneId === 0 && result && result.aegisFound === false) {
         term.writeln('\x1b[33m[AEGIS] aegis-cli not found on this system — falling back to your default shell.\x1b[0m');
         term.writeln('\x1b[33m        Install it from https://github.com/aegisinfo/aegiscode\x1b[0m\r\n');
+      }
+      if (paneId === 0 && result && result.claudeFound === false) {
+        term.writeln('\x1b[33m[Claude] claude CLI not found on this system — falling back to your default shell.\x1b[0m');
+        term.writeln('\x1b[33m        Install it with: npm install -g @anthropic-ai/claude-code\x1b[0m\r\n');
       }
     } catch (err) {
       term.writeln(`\r\n\x1b[31mFailed to spawn shell: ${err.message}\x1b[0m`);
@@ -197,9 +206,11 @@
   // ─── Layout: Build Split View ───────────────────────
   // We pre-create pane-0 and pane-1 in HTML, so we just
   // need to pick them up and attach xterm to each.
-  function initPanes() {
+  async function initPanes() {
+    initialSession = (await window.terminal.getInitialSession().catch(() => 'aegis')) || 'aegis';
+
     const existingPanes = document.querySelectorAll('.pane');
-    const labels = ['AEGIS', 'shell'];
+    const labels = [initialSession === 'claude' ? 'Claude' : 'AEGIS', 'shell'];
 
     existingPanes.forEach((el, i) => {
       const id = parseInt(el.dataset.pane);
@@ -207,6 +218,7 @@
       const headerEl = el.querySelector('.pane-header');
       const labelEl = headerEl.querySelector('.pane-label');
       const label = labels[i] || 'term';
+      if (labelEl) labelEl.textContent = label;
 
       const term = new Terminal({
         cursorBlink: true,

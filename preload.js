@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('terminal', {
     ipcRenderer.invoke('pty:kill', paneId),
   getShell: (paneId) =>
     ipcRenderer.invoke('pty:getShell', paneId),
+  getInitialSession: () =>
+    ipcRenderer.invoke('session:getInitial'),
 
   // Incoming data from PTY (all panes multiplexed by paneId)
   onData: (callback) => {

@@ -8,6 +8,13 @@ const pty = require('node-pty');
 let mainWindow;
 const ptyProcesses = new Map(); // paneId -> { pty, shell }
 
+// Which CLI pane 0 ("AEGIS" pane) should run, picked at launch time via
+// `--session=aegis|claude` (e.g. from aegiscode's GUI, which spawns this app
+// per-button instead of a bare OS terminal emulator). Defaults to aegis-cli
+// so launching Terminal DS with no args keeps its original behavior.
+const sessionArg = process.argv.find((a) => a.startsWith('--session='));
+const initialSession = sessionArg ? sessionArg.slice('--session='.length) : 'aegis';
+
 function getDefaultShell() {
   if (process.platform === 'win32') return 'powershell.exe';
   return process.env.SHELL || (process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash');
@@ -44,6 +51,31 @@ function findAegisCli() {
       if (found) return found;
     } catch {}
   }
+  return null;
+}
+
+// Locate an installed Claude Code (`claude`) binary — same resolution
+// strategy as findAegisCli() above.
+function findClaudeCli() {
+  const exe = process.platform === 'win32' ? '.exe' : '';
+  const cmd = process.platform === 'win32' ? '.cmd' : '';
+  const home = os.homedir();
+  const candidates = [
+    path.join(home, '.local', 'bin', `claude${exe}`),
+    process.env.APPDATA && path.join(process.env.APPDATA, 'npm', `claude${cmd}`),
+    path.join(home, '.npm-global', 'bin', `claude${exe}`),
+    '/opt/homebrew/bin/claude',
+    '/usr/local/bin/claude',
+    '/usr/bin/claude',
+  ].filter(Boolean);
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  try {
+    const found = execFileSync(process.platform === 'win32' ? 'where' : 'which', ['claude'], { encoding: 'utf8' })
+      .trim().split(/\r?\n/)[0];
+    if (found) return found;
+  } catch {}
   return null;
 }
 
@@ -155,16 +187,26 @@ ipcMain.handle('pty:spawn', (_event, paneId, cols, rows, shell) => {
     ptyProcesses.delete(paneId);
   }
 
-  // 'aegis' is a sentinel, not a literal shell path — the AEGIS pane asks
-  // for aegis-cli specifically rather than an explicit shell override.
+  // 'aegis' / 'claude' are sentinels, not literal shell paths — the AEGIS
+  // pane asks for aegis-cli or Claude Code specifically rather than an
+  // explicit shell override.
   let shellPath;
   let aegisFound = true;
+  let claudeFound = true;
   if (shell === 'aegis') {
     const aegisBin = findAegisCli();
     if (aegisBin) {
       shellPath = aegisBin;
     } else {
       aegisFound = false;
+      shellPath = getDefaultShell();
+    }
+  } else if (shell === 'claude') {
+    const claudeBin = findClaudeCli();
+    if (claudeBin) {
+      shellPath = claudeBin;
+    } else {
+      claudeFound = false;
       shellPath = getDefaultShell();
     }
   } else {
@@ -194,8 +236,10 @@ ipcMain.handle('pty:spawn', (_event, paneId, cols, rows, shell) => {
   });
 
   ptyProcesses.set(paneId, { pty: proc, shell: shellName });
-  return { shell: shellName, aegisFound };
+  return { shell: shellName, aegisFound, claudeFound };
 });
+
+ipcMain.handle('session:getInitial', () => initialSession);
 
 ipcMain.handle('pty:resize', (_event, paneId, cols, rows) => {
   const proc = ptyProcesses.get(paneId);
